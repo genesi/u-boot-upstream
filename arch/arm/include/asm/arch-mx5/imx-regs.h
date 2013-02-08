@@ -224,6 +224,15 @@
 #define CS0_32M_CS1_32M_CS2_32M_CS3_32M		3
 
 /*
+ * SRC register definitions
+ */
+#if defined(CONFIG_MX51)
+#define SRC_SBMR_NF16B		(1 << 2)
+#elif defined(CONFIG_MX53)
+#define SRC_SBMR_NF16B		(1 << 13)
+#endif
+
+/*
  * CSPI register definitions
  */
 #define MXC_ECSPI
