@@ -414,9 +414,9 @@ static iomux_v3_cfg_t const efikamx_pata_pads[] = {
  * EHCI USB
  */
 #ifdef	CONFIG_CMD_USB
-extern void setup_iomux_usb(void);
+extern void efikamx_setup_usb(void);
 #else
-static inline void setup_iomux_usb(void) { }
+static inline void efikamx_setup_usb(void) { }
 #endif
 
 /*
@@ -500,7 +500,8 @@ int board_late_init(void)
 
 	imx_iomux_v3_setup_multiple_pads(efikamx_pata_pads,
 					ARRAY_SIZE(efikamx_pata_pads));
-	setup_iomux_usb();
+
+	efikamx_setup_usb();
 
 	return 0;
 }

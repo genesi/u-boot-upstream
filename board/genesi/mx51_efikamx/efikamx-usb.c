@@ -2,6 +2,7 @@
  * Copyright (C) 2010 Marek Vasut <marek.vasut@gmail.com>
  *
  * (C) Copyright 2009 Freescale Semiconductor, Inc.
+ * (C) Copyright 2012-2013 Genesi USA, Inc.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -25,9 +26,7 @@
 #include <common.h>
 #include <usb.h>
 #include <asm/io.h>
-#include <asm/arch/imx-regs.h>
-#include <asm/arch/mx5x_pins.h>
-#include <asm/arch/iomux.h>
+#include <asm/arch/iomux-mx51.h>
 #include <asm/gpio.h>
 #include <usb/ehci-fsl.h>
 #include <usb/ulpi.h>
@@ -35,111 +34,158 @@
 
 #include "../../../drivers/usb/host/ehci.h"
 
-/* USB pin configuration */
-#define USB_PAD_CONFIG	(PAD_CTL_PKE_ENABLE | PAD_CTL_SRE_FAST | \
-			PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU | \
-			PAD_CTL_HYS_ENABLE | PAD_CTL_PUE_PULL)
+iomux_v3_cfg_t efikamx_usbh1_pads[] = {
+	MX51_PAD_USBH1_CLK__USBH1_CLK,
+	MX51_PAD_USBH1_DIR__USBH1_DIR,
+	MX51_PAD_USBH1_STP__USBH1_STP,
+	MX51_PAD_USBH1_NXT__USBH1_NXT,
+	MX51_PAD_USBH1_DATA0__USBH1_DATA0,
+	MX51_PAD_USBH1_DATA1__USBH1_DATA1,
+	MX51_PAD_USBH1_DATA2__USBH1_DATA2,
+	MX51_PAD_USBH1_DATA3__USBH1_DATA3,
+	MX51_PAD_USBH1_DATA4__USBH1_DATA4,
+	MX51_PAD_USBH1_DATA5__USBH1_DATA5,
+	MX51_PAD_USBH1_DATA6__USBH1_DATA6,
+	MX51_PAD_USBH1_DATA7__USBH1_DATA7,
+};
+
+iomux_v3_cfg_t efikasb_usbh2_pads[] = {
+	MX51_PAD_EIM_A24__USBH2_CLK,
+	MX51_PAD_EIM_A25__USBH2_DIR,
+	MX51_PAD_EIM_A26__USBH2_STP,
+	MX51_PAD_EIM_A27__USBH2_NXT,
+	MX51_PAD_EIM_D16__USBH2_DATA0,
+	MX51_PAD_EIM_D17__USBH2_DATA1,
+	MX51_PAD_EIM_D18__USBH2_DATA2,
+	MX51_PAD_EIM_D19__USBH2_DATA3,
+	MX51_PAD_EIM_D20__USBH2_DATA4,
+	MX51_PAD_EIM_D21__USBH2_DATA5,
+	MX51_PAD_EIM_D22__USBH2_DATA6,
+	MX51_PAD_EIM_D23__USBH2_DATA7,
+};
+
+iomux_v3_cfg_t efikamx_usbctrl_pads[] = {
+	MX51_PAD_EIM_D27__GPIO2_9,
+	MX51_PAD_GPIO1_5__GPIO1_5,
+	MX51_PAD_EIM_A22__GPIO2_16,
+	MX51_PAD_EIM_A16__GPIO2_10,
+	MX51_PAD_EIM_A17__GPIO2_11,
+};
+
+#define EFIKAMX_USB_HUB_RESET	IMX_GPIO_NR(1, 5)
+#define EFIKAMX_USB_PHY_RESET	IMX_GPIO_NR(2, 9)
+#define EFIKAMX_USB_WLAN_ENABLE	IMX_GPIO_NR(2, 16)
+#define EFIKAMX_USB_WLAN_RESET	IMX_GPIO_NR(2, 10)
+#define EFIKAMX_USB_BT_RESET	IMX_GPIO_NR(2, 11)
+
+iomux_v3_cfg_t efikasb_usbctrl_pads[] = {
+	MX51_PAD_NANDF_CS0__GPIO3_16,
+	MX51_PAD_EIM_CS1__GPIO2_26,
+	MX51_PAD_CSI1_HSYNC__GPIO3_15,
+	MX51_PAD_CSI2_D13__GPIO4_10,
+};
+
+#define EFIKASB_USB_CAMERA_ENABLE	IMX_GPIO_NR(3, 16)
+#define EFIKASB_USB_WWAN_RESET		IMX_GPIO_NR(3, 15)
+
+#define EFIKASB_WWAN_SIM_CD		IMX_GPIO_NR(2, 26)
+#define EFIKASB_RFKILL_SW		IMX_GPIO_NR(4, 10)
 
 /*
  * Configure the USB H1 and USB H2 IOMUX
  */
-void setup_iomux_usb(void)
+void efikamx_setup_usb(void)
 {
-	setup_iomux_usb_h1();
+	imx_iomux_v3_setup_multiple_pads(efikamx_usbh1_pads,
+					ARRAY_SIZE(efikamx_usbh1_pads));
+	imx_iomux_v3_setup_multiple_pads(efikamx_usbctrl_pads,
+					ARRAY_SIZE(efikamx_usbctrl_pads));
+	gpio_direction_output(EFIKAMX_USB_HUB_RESET, 0);
+	gpio_direction_output(EFIKAMX_USB_PHY_RESET, 0);
+	gpio_direction_output(EFIKAMX_USB_WLAN_ENABLE, 0);
+	gpio_direction_output(EFIKAMX_USB_WLAN_RESET, 0);
+	gpio_direction_output(EFIKAMX_USB_BT_RESET, 0);
 
-	if (machine_is_efikasb())
-		setup_iomux_usb_h2();
-
-	/* USB PHY reset */
-	mxc_request_iomux(MX51_PIN_EIM_D27, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX51_PIN_EIM_D27, PAD_CTL_PKE_ENABLE |
-			PAD_CTL_SRE_FAST | PAD_CTL_DRV_HIGH);
-
-	/* USB HUB reset */
-	mxc_request_iomux(MX51_PIN_GPIO1_5, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_GPIO1_5, PAD_CTL_PKE_ENABLE |
-			PAD_CTL_SRE_FAST | PAD_CTL_DRV_HIGH);
-
-	/* WIFI EN (act low) */
-	mxc_request_iomux(MX51_PIN_EIM_A22, IOMUX_CONFIG_GPIO);
-	mxc_iomux_set_pad(MX51_PIN_EIM_A22, 0);
-	/* WIFI RESET */
-	mxc_request_iomux(MX51_PIN_EIM_A16, IOMUX_CONFIG_GPIO);
-	mxc_iomux_set_pad(MX51_PIN_EIM_A16, 0);
-	/* BT EN (act low) */
-	mxc_request_iomux(MX51_PIN_EIM_A17, IOMUX_CONFIG_GPIO);
-	mxc_iomux_set_pad(MX51_PIN_EIM_A17, 0);
+	if (machine_is_efikasb()) {
+		imx_iomux_v3_setup_multiple_pads(efikasb_usbh2_pads,
+						ARRAY_SIZE(efikasb_usbh2_pads));
+		imx_iomux_v3_setup_multiple_pads(efikasb_usbctrl_pads,
+						ARRAY_SIZE(efikasb_usbctrl_pads));
+		gpio_direction_input(EFIKASB_RFKILL_SW);
+		gpio_direction_input(EFIKASB_WWAN_SIM_CD);
+		gpio_direction_output(EFIKASB_USB_WWAN_RESET, 0);
+		gpio_direction_output(EFIKASB_USB_CAMERA_ENABLE, 0);
+	}
 }
 
 /*
  * Enable devices connected to USB BUSes
  */
-static void efika_usb_enable_devices(void)
+static void efikamx_usb_enable_devices(void)
 {
 	/* Enable Bluetooth */
-	gpio_direction_output(IOMUX_TO_GPIO(MX51_PIN_EIM_A17), 0);
+	gpio_set_value(EFIKAMX_USB_BT_RESET, 0);
 	udelay(10000);
-	gpio_set_value(IOMUX_TO_GPIO(MX51_PIN_EIM_A17), 1);
+	gpio_set_value(EFIKAMX_USB_BT_RESET, 1);
 
 	/* Enable WiFi */
-	gpio_direction_output(IOMUX_TO_GPIO(MX51_PIN_EIM_A22), 1);
+	gpio_set_value(EFIKAMX_USB_WLAN_ENABLE, 1);
 	udelay(10000);
 
 	/* Reset the WiFi chip */
-	gpio_direction_output(IOMUX_TO_GPIO(MX51_PIN_EIM_A16), 0);
+	gpio_set_value(EFIKAMX_USB_WLAN_RESET, 0);
 	udelay(10000);
-	gpio_set_value(IOMUX_TO_GPIO(MX51_PIN_EIM_A16), 1);
+	gpio_set_value(EFIKAMX_USB_WLAN_RESET, 1);
+
+	if (machine_is_efikasb()) {
+		gpio_set_value(EFIKASB_USB_WWAN_RESET, 1);
+		gpio_set_value(EFIKASB_USB_CAMERA_ENABLE, 1);
+	}
 }
 
 /*
  * Reset USB HUB (or HUBs on EfikaSB)
  */
-static void efika_usb_hub_reset(void)
+static void efikamx_usb_hub_reset(void)
 {
 	/* HUB reset */
-	gpio_direction_output(IOMUX_TO_GPIO(MX51_PIN_GPIO1_5), 1);
+	gpio_set_value(EFIKAMX_USB_HUB_RESET, 1);
 	udelay(1000);
-	gpio_set_value(IOMUX_TO_GPIO(MX51_PIN_GPIO1_5), 0);
+	gpio_set_value(EFIKAMX_USB_HUB_RESET, 0);
 	udelay(1000);
-	gpio_set_value(IOMUX_TO_GPIO(MX51_PIN_GPIO1_5), 1);
+	gpio_set_value(EFIKAMX_USB_HUB_RESET, 1);
 }
 
 /*
  * Reset USB PHY (or PHYs on EfikaSB)
  */
-static void efika_usb_phy_reset(void)
+static void efikamx_usb_phy_reset(void)
 {
 	/* SMSC 3317 PHY reset */
-	gpio_direction_output(IOMUX_TO_GPIO(MX51_PIN_EIM_D27), 0);
+	gpio_set_value(EFIKAMX_USB_PHY_RESET, 0);
 	udelay(1000);
-	gpio_set_value(IOMUX_TO_GPIO(MX51_PIN_EIM_D27), 1);
+	gpio_set_value(EFIKAMX_USB_PHY_RESET, 1);
 }
 
-static void efika_ehci_init(struct usb_ehci *ehci, uint32_t stp_gpio,
-				uint32_t alt0, uint32_t alt1)
+static void efikamx_ehci_init(struct usb_ehci *ehci,
+			iomux_v3_cfg_t stp_pad,
+			iomux_v3_cfg_t gpio_pad, u32 nr)
 {
 	int ret;
 	struct ulpi_regs *ulpi = (struct ulpi_regs *)0;
 	struct ulpi_viewport ulpi_vp;
 
-	mxc_request_iomux(stp_gpio, alt0);
-	mxc_iomux_set_pad(stp_gpio, PAD_CTL_DRV_HIGH |
-				PAD_CTL_PKE_ENABLE | PAD_CTL_SRE_FAST);
-	gpio_direction_output(IOMUX_TO_GPIO(stp_gpio), 0);
-	udelay(1000);
-	gpio_set_value(IOMUX_TO_GPIO(stp_gpio), 1);
-	udelay(1000);
-
-	mxc_request_iomux(stp_gpio, alt1);
-	mxc_iomux_set_pad(stp_gpio, USB_PAD_CONFIG);
-	udelay(10000);
+	imx_iomux_v3_setup_pad(gpio_pad);
+	gpio_direction_output(nr, 0);		udelay(1000);
+	gpio_set_value(nr, 1);				udelay(1000);
+	imx_iomux_v3_setup_pad(stp_pad);	udelay(10000);
 
 	ulpi_vp.viewport_addr = (u32)&ehci->ulpi_viewpoint;
 	ulpi_vp.port_num = 0;
 
 	ret = ulpi_init(&ulpi_vp);
 	if (ret) {
-		printf("Efika USB ULPI initialization failed\n");
+		printf("Efika MX USB ULPI initialization failed\n");
 		return;
 	}
 
@@ -159,18 +205,24 @@ static void efika_ehci_init(struct usb_ehci *ehci, uint32_t stp_gpio,
 	/*
 	 * Set VBusChrg
 	 *
-	 * NOTE: This violates USB specification, but otherwise, USB on Efika
-	 * doesn't work.
+	 * NOTE: This is a technical USB specification violation, but on
+	 * the Efika MX the VBUS line here isn't actually connected to
+	 * anything except hub enables, which means it's just a quirky
+	 * way of doing it. In theory, only the Smartbook should need it,
+	 * but the Smarttop schematics belie some bug somewhere, somehow
+	 * which means until we know what the bug actually is we have to
+	 * do the same thing.
 	 */
 	ulpi_write(&ulpi_vp, &ulpi->otg_ctrl_set, ULPI_OTG_CHRGVBUS);
+	
+	udelay(1000);
 }
 
 int board_ehci_hcd_init(int port)
 {
-	/* Init iMX51 EHCI */
-	efika_usb_phy_reset();
-	efika_usb_hub_reset();
-	efika_usb_enable_devices();
+	efikamx_usb_phy_reset();
+	efikamx_usb_hub_reset();
+	efikamx_usb_enable_devices();
 
 	return 0;
 }
@@ -204,15 +256,16 @@ void board_ehci_hcd_postinit(struct usb_ehci *ehci, int port)
 		tmp = (tmp & ~0x3) | 0x01;
 		writel(tmp, OTG_BASE_ADDR + 0x80c);
 	} else if (port == 1) {
-		efika_ehci_init(ehci, MX51_PIN_USBH1_STP,
-				IOMUX_CONFIG_ALT2, IOMUX_CONFIG_ALT0);
+		efikamx_ehci_init(ehci,
+				MX51_PAD_USBH1_STP__USBH1_STP,
+				MX51_PAD_USBH1_STP__GPIO1_27,
+				IMX_GPIO_NR(1, 27));
 	} else if ((port == 2) && machine_is_efikasb()) {
-		efika_ehci_init(ehci, MX51_PIN_EIM_A26,
-				IOMUX_CONFIG_ALT1, IOMUX_CONFIG_ALT2);
+		efikamx_ehci_init(ehci,
+				MX51_PAD_EIM_A26__USBH2_STP,
+				MX51_PAD_EIM_A26__GPIO2_20,
+				IMX_GPIO_NR(2, 20));
 	}
-
-	if (port)
-		mdelay(10);
 }
 
 /*
