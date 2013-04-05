@@ -32,8 +32,8 @@ COBJS-y += command.o
 COBJS-y += exports.o
 COBJS-y += hash.o
 COBJS-$(CONFIG_SYS_HUSH_PARSER) += hush.o
-COBJS-y += s_record.o
-COBJS-y += xyzModem.o
+COBJS-$(CONFIG_CMD_LOADS) += s_record.o
+COBJS-$(CONFIG_CMD_LOADB) += xyzModem.o
 COBJS-y += cmd_disk.o
 
 # boards
