@@ -281,10 +281,8 @@
  */
 #define CONFIG_BOOTCOMMAND \
 	"for device in ${bootdevices}; do " \
-		"if test ${device} = \"ide\"; then " \
-			"ide reset; setenv units \"0\"; " \
-		"elif test ${device} = \"mmc\"; then " \
-			"mmc rescan; setenv units \"1 0\"; " \
+		"if test ${device} = \"mmc\"; then " \
+			"mmc rescan; setenv units \"0\"; " \
 		"elif test ${device} = \"usb\"; then " \
 			"usb start; setenv units \"0\"; " \
 		"fi; " \
