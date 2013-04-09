@@ -58,9 +58,9 @@
 #undef CONFIG_CMD_IMLS
 
 /*
- * Using Thumb2 saves us a lot more space.. but doesn't chain properly here
+ * Using Thumb2 saves us a lot more space..
  */
-//#define CONFIG_SYS_THUMB_BUILD
+#define CONFIG_SYS_THUMB_BUILD
 
 /*
  * We will need to undefine this to save even more space if we break the 256KiB
