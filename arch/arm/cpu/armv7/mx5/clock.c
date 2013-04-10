@@ -496,6 +496,19 @@ static u32 get_ddr_clk(void)
 	return ret_val;
 }
 
+static u32 get_nfc_clk(void)
+{
+	u32 parent_rate = get_emi_slow_clk();
+	u32 div, freq;
+
+	div = MXC_CCM_CBCDR_NFC_PODF_RD(mxc_ccm->cbcdr);
+
+	freq = parent_rate / (div + 1);
+
+	return freq;
+}
+
+
 /*
  * The API of get mxc clocks.
  */
@@ -529,6 +542,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return get_ahb_clk();
 	case MXC_DDR_CLK:
 		return get_ddr_clk();
+	case MXC_NFC_CLK:
+		return get_nfc_clk();
 	default:
 		break;
 	}
@@ -936,6 +951,9 @@ int do_mx5_showclocks(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	printf("IPG        %8d kHz\n", mxc_get_clock(MXC_IPG_CLK) / 1000);
 	printf("IPG PERCLK %8d kHz\n", mxc_get_clock(MXC_IPG_PERCLK) / 1000);
 	printf("DDR        %8d kHz\n", mxc_get_clock(MXC_DDR_CLK) / 1000);
+#ifdef CONFIG_NAND_MXC
+	printf("NFC        %8d kHz\n", mxc_get_clock(MXC_NFC_CLK) / 1000);
+#endif
 #ifdef CONFIG_MXC_SPI
 	printf("CSPI       %8d kHz\n", mxc_get_clock(MXC_CSPI_CLK) / 1000);
 #endif
