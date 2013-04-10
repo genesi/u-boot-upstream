@@ -24,7 +24,10 @@
  */
 
 #include "ubifs.h"
+
+#ifdef CONFIG_ZLIB
 #include <u-boot/zlib.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -34,12 +37,14 @@ DECLARE_GLOBAL_DATA_PTR;
  * We need a wrapper for zunzip() because the parameters are
  * incompatible with the lzo decompressor.
  */
+#ifdef CONFIG_ZLIB
 static int gzip_decompress(const unsigned char *in, size_t in_len,
 			   unsigned char *out, size_t *out_len)
 {
 	return zunzip(out, *out_len, (unsigned char *)in,
 		      (unsigned long *)out_len, 0, 0);
 }
+#endif
 
 /* Fake description object for the "none" compressor */
 static struct ubifs_compressor none_compr = {
@@ -49,19 +54,22 @@ static struct ubifs_compressor none_compr = {
 	.decompress = NULL,
 };
 
+#ifdef CONFIG_LZO
 static struct ubifs_compressor lzo_compr = {
 	.compr_type = UBIFS_COMPR_LZO,
 	.name = "LZO",
 	.capi_name = "lzo",
 	.decompress = lzo1x_decompress_safe,
 };
-
+#endif
+#ifdef CONFIG_ZLIB
 static struct ubifs_compressor zlib_compr = {
 	.compr_type = UBIFS_COMPR_ZLIB,
 	.name = "zlib",
 	.capi_name = "deflate",
 	.decompress = gzip_decompress,
 };
+#endif
 
 /* All UBIFS compressors */
 struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
@@ -140,14 +148,17 @@ int __init ubifs_compressors_init(void)
 {
 	int err;
 
+#ifdef CONFIG_LZO
 	err = compr_init(&lzo_compr);
 	if (err)
 		return err;
+#endif
 
+#ifdef CONFIG_ZLIB
 	err = compr_init(&zlib_compr);
 	if (err)
 		return err;
-
+#endif
 	err = compr_init(&none_compr);
 	if (err)
 		return err;
