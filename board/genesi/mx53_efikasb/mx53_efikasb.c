@@ -160,6 +160,54 @@ static iomux_v3_cfg_t const efikasb_nand_pads[] = {
 	MX53_PAD_EIM_DA7__EMI_NAND_WEIM_DA_7,
 };
 
+/* NAND flash configuration */
+#define EFIKASB_WEIM_CS0GCR1	(CSEN | DSZ(2))
+#define EFIKASB_WEIM_CS0GCR2	0
+#define EFIKASB_WEIM_CS0RCR1	(RCSN(2) | OEN(1) | RWSC(15))
+#define EFIKASB_WEIM_CS0RCR2	0
+#define EFIKASB_WEIM_CS0WCR1	(WBED1 | WCSN(2) | WEN(1) | WWSC(15))
+#define EFIKASB_WEIM_CS0WCR2	0
+
+#define M4IF_GPR	(M4IF_BASE_ADDR + 0x0c)
+#define MUX16_BYP_GRANT	(1 << 12)
+
+static void efikasb_nand_init(void)
+{
+	u32 m4if_gpr, csxgcr2;
+	struct weim *weim_regs = (struct weim *)WEIM_BASE_ADDR;
+
+	/*
+	 * We must instruct the M4IF that WEIM is not muxed with NANDF
+	 * data pins.. in theory we should be setting BOOT_CFG1[6] eFUSE
+	 * to override this for production according to the manual (page 3492)
+	 */
+	m4if_gpr = readl(M4IF_GPR);
+	m4if_gpr &= ~0x1;
+	writel(m4if_gpr, M4IF_GPR);
+
+	/*
+	 * Then we have to configure the WEIM to wait for a grant (which
+	 * it will never get..) before driving the muxed NAND/EIM pins,
+	 * effectively giving the NFC exclusive access to the NAND pins
+	 */
+
+	csxgcr2 = readl(&weim_regs->cs0gcr2);
+	csxgcr2 &= ~MUX16_BYP_GRANT;
+	writel(csxgcr2, &weim_regs->cs0gcr2);
+
+	csxgcr2 = readl(&weim_regs->cs1gcr2);
+	csxgcr2 &= ~MUX16_BYP_GRANT;
+	writel(csxgcr2, &weim_regs->cs1gcr2);
+
+	csxgcr2 = readl(&weim_regs->cs2gcr2);
+	csxgcr2 &= ~MUX16_BYP_GRANT;
+	writel(csxgcr2, &weim_regs->cs2gcr2);
+
+	csxgcr2 = readl(&weim_regs->cs3gcr2);
+	csxgcr2 &= ~MUX16_BYP_GRANT;
+	writel(csxgcr2, &weim_regs->cs3gcr2);
+}
+
 /*
  * UART configuration
  *
@@ -192,6 +240,8 @@ int board_early_init_f(void)
 	 */
 	mxc_set_clock(0, 33, MXC_NFC_CLK);
 	enable_nfc_clk(1);
+	efikasb_nand_init();
+
 
 	/*
 	 * Now, get everything we can set up - as early as possible
