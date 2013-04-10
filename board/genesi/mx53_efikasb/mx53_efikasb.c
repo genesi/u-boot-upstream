@@ -34,7 +34,6 @@
 #include <asm/gpio.h>
 #include <fsl_esdhc.h>
 #include <mmc.h>
-#include <nand.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -160,15 +159,8 @@ static iomux_v3_cfg_t const efikasb_nand_pads[] = {
 	MX53_PAD_EIM_DA7__EMI_NAND_WEIM_DA_7,
 };
 
-/* NAND flash configuration */
-#define EFIKASB_WEIM_CS0GCR1	(CSEN | DSZ(2))
-#define EFIKASB_WEIM_CS0GCR2	0
-#define EFIKASB_WEIM_CS0RCR1	(RCSN(2) | OEN(1) | RWSC(15))
-#define EFIKASB_WEIM_CS0RCR2	0
-#define EFIKASB_WEIM_CS0WCR1	(WBED1 | WCSN(2) | WEN(1) | WWSC(15))
-#define EFIKASB_WEIM_CS0WCR2	0
-
 #define M4IF_GPR	(M4IF_BASE_ADDR + 0x0c)
+#define M4IF_GPR_MM	(1 << 0)
 #define MUX16_BYP_GRANT	(1 << 12)
 
 static void efikasb_nand_init(void)
@@ -181,8 +173,9 @@ static void efikasb_nand_init(void)
 	 * data pins.. in theory we should be setting BOOT_CFG1[6] eFUSE
 	 * to override this for production according to the manual (page 3492)
 	 */
+
 	m4if_gpr = readl(M4IF_GPR);
-	m4if_gpr &= ~0x1;
+	m4if_gpr &= ~M4IF_GPR_MM;
 	writel(m4if_gpr, M4IF_GPR);
 
 	/*
