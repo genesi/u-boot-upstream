@@ -56,6 +56,10 @@
 #undef CONFIG_CMD_LOADS
 #undef CONFIG_CMD_LOADY
 #undef CONFIG_CMD_IMLS
+#undef CONFIG_CMD_NET
+#undef CONFIG_CMD_NFS
+#undef CONFIG_CMD_PING
+#undef CONFIG_CMD_DHCP
 
 /*
  * Using Thumb2 saves us a lot more space..
@@ -113,7 +117,7 @@
 #	define CONFIG_SYS_FSL_ESDHC_NUM		1
 #endif /* CONFIG_CMD_MMC */
 
-#define CONFIG_CMD_USB
+#undef CONFIG_CMD_USB
 #ifdef CONFIG_CMD_USB
 #	define CONFIG_USB_EHCI
 #	define CONFIG_USB_EHCI_MX5
@@ -148,6 +152,39 @@
 #	define CONFIG_CMD_EXT2
 #	define CONFIG_CMD_EXT4
 #endif /* CONFIG_CMD_USB || CONFIG_CMD_MMC */
+
+#define CONFIG_CMD_UBIFS
+#ifdef CONFIG_CMD_UBIFS
+#	define CONFIG_CMD_UBI
+#	undef CONFIG_LZO
+#	define CONFIG_RBTREE
+#	undef CONFIG_ZLIB
+#	undef CONFIG_GZIP
+
+#	define CONFIG_CMD_NAND
+#	define CONFIG_SYS_MAX_NAND_DEVICE	1
+#	define CONFIG_SYS_NAND_LARGEPAGE
+#	define CONFIG_SYS_NAND_ONFI_DETECTION
+#	define CONFIG_SYS_NAND_USE_FLASH_BBT
+#	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR_AXI)
+
+#	define CONFIG_NAND_MXC
+#	define CONFIG_MXC_NAND_REGS_BASE	(NFC_BASE_ADDR_AXI)
+#	define CONFIG_MXC_NAND_IP_REGS_BASE	(NFC_BASE_ADDR)
+#	define CONFIG_MXC_NAND_8BIT
+#	define CONFIG_MXC_NAND_HWECC
+
+#	define CONFIG_CMD_MTDPARTS
+#	define CONFIG_MTD_DEVICE
+#	define CONFIG_MTD_DEBUG
+#	ifdef CONFIG_MTD_DEBUG
+#		define CONFIG_MTD_DEBUG_VERBOSE	7
+#	endif
+#	define MTDIDS_DEFAULT		"nand0=mxc-nand"
+#	define CONFIG_MTD_PARTITIONS
+#	define MTDPARTS_DEFAULT		"mtdparts=mxc-nand:32m(bootloader)ro,128m(kernel),-(filesystem)"
+#endif /* CONFIG_CMD_UBIFS */
+
 
 /*
  * Physical Memory Map
@@ -300,5 +337,9 @@
 			"done; " \
 		"done; " \
 	"done; "
+
+#ifdef CONFIG_CMD_NFS
+#warning fucccck
+#endif
 
 #endif /* __CONFIG_H */

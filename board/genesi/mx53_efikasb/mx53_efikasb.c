@@ -31,9 +31,10 @@
 #include <asm/arch/iomux-mx53.h>
 #include <asm/arch/clock.h>
 #include <asm/errno.h>
-#include <mmc.h>
-#include <fsl_esdhc.h>
 #include <asm/gpio.h>
+#include <fsl_esdhc.h>
+#include <mmc.h>
+#include <nand.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -136,20 +137,9 @@ int board_mmc_init(bd_t *bis)
 }
 
 
-
 /*
- * UART configuration
- *
- * UART1 is on test pads connected to the i.MX
- * UART2 is connected to the Housekeeping MCU
+ * NAND configuration
  */
-static iomux_v3_cfg_t const efikasb_uart_pads[] = {
-	MX53_PAD_PATA_DIOW__UART1_TXD_MUX,
-	MX53_PAD_PATA_DMACK__UART1_RXD_MUX,
-
-	MX53_PAD_PATA_DMARQ__UART2_TXD_MUX,
-	MX53_PAD_PATA_BUFFER_EN__UART2_RXD_MUX,
-};
 
 static iomux_v3_cfg_t const efikasb_nand_pads[] = {
 	MX53_PAD_NANDF_CLE__EMI_NANDF_CLE,
@@ -170,6 +160,20 @@ static iomux_v3_cfg_t const efikasb_nand_pads[] = {
 	MX53_PAD_EIM_DA7__EMI_NAND_WEIM_DA_7,
 };
 
+/*
+ * UART configuration
+ *
+ * UART1 is on test pads connected to the i.MX
+ * UART2 is connected to the Housekeeping MCU
+ */
+static iomux_v3_cfg_t const efikasb_uart_pads[] = {
+	MX53_PAD_PATA_DIOW__UART1_TXD_MUX,
+	MX53_PAD_PATA_DMACK__UART1_RXD_MUX,
+
+	MX53_PAD_PATA_DMARQ__UART2_TXD_MUX,
+	MX53_PAD_PATA_BUFFER_EN__UART2_RXD_MUX,
+};
+
 int board_early_init_f(void)
 {
 	/*
@@ -184,6 +188,12 @@ int board_early_init_f(void)
 	mxc_set_clock(MXC_HCLK, 400, MXC_DDR_CLK);
 
 	/*
+	 * Configure and enable the NAND clock
+	 */
+	mxc_set_clock(0, 33, MXC_NFC_CLK);
+	enable_nfc_clk(1);
+
+	/*
 	 * Now, get everything we can set up - as early as possible
 	 */
 
@@ -194,6 +204,9 @@ int board_early_init_f(void)
 			ARRAY_SIZE(efikasb_sdhc_pads));
 
 	gpio_direction_input(EFIKASB_SDHC1_WP);
+
+	imx_iomux_v3_setup_multiple_pads(efikasb_nand_pads,
+			ARRAY_SIZE(efikasb_nand_pads));
 
 	imx_iomux_v3_setup_multiple_pads(efikasb_usb_pads,
 			ARRAY_SIZE(efikasb_usb_pads));
