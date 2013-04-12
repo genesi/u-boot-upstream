@@ -269,6 +269,13 @@ int board_early_init_f(void)
 
 int board_init(void)
 {
+#if 0
+	/* SRC_SBMR contains the eFUSE setting for NAND buswidth */
+        struct src *src = (struct src *)SRC_BASE_ADDR;
+	u32 sbmr;
+
+        sbmr = readl(&src->sbmr);
+#endif
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
 	return 0;

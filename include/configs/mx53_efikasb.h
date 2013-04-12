@@ -166,6 +166,7 @@
 #	define CONFIG_SYS_NAND_LARGEPAGE
 #	define CONFIG_SYS_NAND_ONFI_DETECTION
 #	define CONFIG_SYS_NAND_USE_FLASH_BBT
+#	define CONFIG_SYS_NAND_BUSWIDTH_8BIT
 #	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR_AXI)
 
 #	define CONFIG_NAND_MXC
@@ -180,9 +181,7 @@
 #	ifdef CONFIG_MTD_DEBUG
 #		define CONFIG_MTD_DEBUG_VERBOSE	7
 #	endif
-#	define MTDIDS_DEFAULT		"nand0=mxc-nand"
 #	define CONFIG_MTD_PARTITIONS
-#	define MTDPARTS_DEFAULT		"mtdparts=mxc-nand:32m(bootloader)ro,128m(kernel),-(filesystem)"
 #endif /* CONFIG_CMD_UBIFS */
 
 
@@ -281,6 +280,8 @@
 	"model=" CONFIG_EFIKAMX_MODEL "\0" \
 	"firmware_version=" U_BOOT_TIMESTAMP "\0" \
 	"bootscript=boot.scr\0" \
+	"mtdids=nand0=mxc-nand\0" \
+	"mtdparts=mtdparts=mxc-nand:1m(bootloader)ro,-(filesystem)\0" \
 	"kerneladdr=" ADDR(CONFIG_KERNEL_ADDR) "\0" \
 	"ramdiskaddr=" ADDR(CONFIG_RD_ADDR) "\0" \
 	"dtbaddr=" ADDR(CONFIG_DT_ADDR) "\0" \

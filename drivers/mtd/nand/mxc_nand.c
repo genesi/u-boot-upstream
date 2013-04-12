@@ -132,7 +132,8 @@ static int is_16bit_nand(void)
 	else
 		return 0;
 }
-#elif defined(CONFIG_MX51) || defined(CONFIG_MX53)
+#elif (defined(CONFIG_MX51) || defined(CONFIG_MX53)) && defined(CONFIG_SYS_NAND_BUSWIDTH_AUTO)
+#warning "NAND: autodetection of buswidth"
 static int is_16bit_nand(void)
 {
 	struct src *src = (struct src *)SRC_BASE_ADDR;
@@ -143,10 +144,18 @@ static int is_16bit_nand(void)
 		return 0;
 }
 #else
-#warning "8/16 bit NAND autodetection not supported"
 static int is_16bit_nand(void)
 {
+#if defined(CONFIG_SYS_NAND_BUSWIDTH_16BIT)
+#warning "NAND: picked 16 bit"
+	return 1;
+#elif defined(CONFIG_SYS_NAND_BUSWIDTH_8BIT)
+#warning "NAND: picked 8 bit"
 	return 0;
+#else
+#warning "NAND: buswidth detection not defined, falling back to 8bit!"
+	return 0;
+#endif
 }
 #endif
 

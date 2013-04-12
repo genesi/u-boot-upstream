@@ -2728,7 +2728,18 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 			mtd->erasesize = (64 * 1024) << (extid & 0x03);
 			extid >>= 2;
 			/* Get buswidth information */
+#if !defined(CONFIG_SYS_NAND_BUSWIDTH_8BIT)
 			busw = (extid & 0x01) ? NAND_BUSWIDTH_16 : 0;
+#else
+			/*
+			 * reading the ONFI parameters and guessing it can support a 16-bit
+			 * bus width, therefore we should enable 16-bit bus width support is
+			 * not fun. So if we forced 8BIT in the config, default to it. The
+			 * 16-bit case will be figured out above, if the chip actually
+			 * supports it, and we're in AUTO or 16BIT mode.
+			 */
+			busw = 0;
+#endif /* !CONFIG_SYS_NAND_BUSWIDTH_8BIT */
 		}
 	} else {
 		/*
