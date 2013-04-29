@@ -2515,6 +2515,20 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
 	return crc;
 }
 
+#if 0
+static void _dump( unsigned char *buf, int size) {
+  int i;
+
+  for (i = 0; i < size; i += 1) {
+    if((i%16)==0) {
+      printk("\n\r%04x:",i);
+    }
+    printk(" %02x",buf[i]);
+  }
+  printk("\n\r");
+}
+#endif
+
 /*
  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise
  */
@@ -2522,19 +2536,37 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 					int *busw)
 {
 	struct nand_onfi_params *p = &chip->onfi_params;
+	char onfi[5];
 	int i;
 	int val;
 
 	/* try ONFI for unknow chip or LP */
+//	printk(KERN_INFO "ONFI NAND_CMD_READID\n");
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x20, -1);
-	if (chip->read_byte(mtd) != 'O' || chip->read_byte(mtd) != 'N' ||
-		chip->read_byte(mtd) != 'F' || chip->read_byte(mtd) != 'I')
+
+	for (i = 0; i < 4; i++)
+		onfi[i] = chip->read_byte(mtd);
+	onfi[5] = '\0';
+
+//	printk(KERN_INFO "ONFI READID returned (0x%02x%02x%02x%02x)\n", onfi[0],onfi[1],onfi[2],onfi[3]);
+
+	if (strncmp(&onfi[0], "ONFI", 4))
+	{
 		return 0;
+	}
 
 	MTDDEBUG(MTD_DEBUG_LEVEL0, "ONFI flash detected\n");
 	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
 	for (i = 0; i < 3; i++) {
-		chip->read_buf(mtd, (uint8_t *)p, sizeof(*p));
+		unsigned char *pc = (unsigned char *) p;
+		int n;
+
+		for (n=0;n<sizeof(*p);n++)
+			pc[n] = chip->read_byte(mtd);
+
+//		printk("ONFI BUF %d", i);
+//		_dump((unsigned char *)p, sizeof(*p));
+
 		if (onfi_crc16(ONFI_CRC_BASE, (uint8_t *)p, 254) ==
 				le16_to_cpu(p->crc)) {
 			MTDDEBUG(MTD_DEBUG_LEVEL0,
@@ -2582,6 +2614,29 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 
 	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
 
+/* hack */
+//#if 0
+//	{
+//		int f = le16_to_cpu(p->features);
+//	printk(KERN_INFO "ONFI %d Features: %s%s%s\n",
+//			chip->onfi_version,
+//			f&0x1 ? "16bit " : "",
+//			f&0x2 ? "multi-LUN " : "",
+//			f&0x40 ? "EPP " : "");
+//
+//	printk(KERN_INFO "MFG %s (JEDEC 0x%x) MODEL %s\n",
+//		p->manufacturer, p->jedec_id, p->model);
+//
+//	udelay(1000*100);
+//	printk(KERN_INFO "page %d data %d oob %d pbb %d\n",
+//			p->byte_per_page, p->data_bytes_per_ppage, p->spare_bytes_per_page,
+//			p->pages_per_block);
+//	udelay(1000*100);
+//	printk(KERN_INFO "bpl %d luns %d ggb %d eccbits %d\n",
+//			 p->blocks_per_lun, p->lun_count, p->guaranteed_good_blocks,
+//			p->ecc_bits);
+//	}
+//#endif
 	return 1;
 }
 #else
@@ -2589,6 +2644,8 @@ static inline int nand_flash_detect_onfi(struct mtd_info *mtd,
 					struct nand_chip *chip,
 					int *busw)
 {
+//	printk(KERN_INFO "stub ONFI\n");
+
 	return 0;
 }
 #endif
@@ -2614,14 +2671,18 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	 * Reset the chip, required by some chips (e.g. Micron MT29FxGxxxxx)
 	 * after power-up
 	 */
+//	printk(KERN_INFO "NAND_CMD_RESET\n");
 	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
 
 	/* Send the command for reading device ID */
+//	printk(KERN_INFO "NAND_CMD_READID\n");
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
 
 	/* Read manufacturer and device IDs */
 	*maf_id = chip->read_byte(mtd);
 	*dev_id = chip->read_byte(mtd);
+
+//	printk(KERN_INFO "MAF_ID %x DEV_ID %x\n", *maf_id, *dev_id);
 
 	/* Try again to make sure, as some systems the bus-hold or other
 	 * interface concerns can cause random data which looks like a
@@ -2629,10 +2690,14 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	 * not match, ignore the device completely.
 	 */
 
+//	printk(KERN_INFO "NAND_CMD_READID (again)\n");
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
 
 	for (i = 0; i < 2; i++)
 		id_data[i] = chip->read_byte(mtd);
+
+//	printk(KERN_INFO "READID returned %02x%02x\n",
+//		id_data[0], id_data[1]);
 
 	if (id_data[0] != *maf_id || id_data[1] != *dev_id) {
 		printk(KERN_INFO "%s: second ID read did not match "
@@ -2650,18 +2715,24 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 
 	chip->onfi_version = 0;
 	if (!type->name || !type->pagesize) {
+//		printk(KERN_INFO "doing ONFI detection\n");
 		/* Check is chip is ONFI compliant */
 		ret = nand_flash_detect_onfi(mtd, chip, &busw);
 		if (ret)
 			goto ident_done;
 	}
 
+//	printk(KERN_INFO "NAND_CMD_READID (again!!!)\n");
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
 
 	/* Read entire ID string */
 
 	for (i = 0; i < 8; i++)
 		id_data[i] = chip->read_byte(mtd);
+
+//	printk(KERN_INFO "READID returned %02x%02x%02x%02x%02x%02x%02x%02x\n",
+//		id_data[0], id_data[1], id_data[2], id_data[3],
+//		id_data[4], id_data[5], id_data[6], id_data[7]);
 
 	if (!type->name)
 		return ERR_PTR(-ENODEV);
@@ -2676,6 +2747,7 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		busw = chip->init_size(mtd, chip, id_data);
 	} else if (!type->pagesize) {
 		int extid;
+
 		/* The 3rd id byte holds MLC / multichip data */
 		chip->cellinfo = id_data[2];
 		/* The 4th id byte is the important one */
@@ -2693,6 +2765,7 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 				id_data[0] == NAND_MFR_SAMSUNG &&
 				(chip->cellinfo & NAND_CI_CELLTYPE_MSK) &&
 				id_data[5] != 0x00) {
+
 			/* Calc pagesize */
 			mtd->writesize = 2048 << (extid & 0x03);
 			extid >>= 2;
@@ -2728,18 +2801,8 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 			mtd->erasesize = (64 * 1024) << (extid & 0x03);
 			extid >>= 2;
 			/* Get buswidth information */
-#if !defined(CONFIG_SYS_NAND_BUSWIDTH_8BIT)
+
 			busw = (extid & 0x01) ? NAND_BUSWIDTH_16 : 0;
-#else
-			/*
-			 * reading the ONFI parameters and guessing it can support a 16-bit
-			 * bus width, therefore we should enable 16-bit bus width support is
-			 * not fun. So if we forced 8BIT in the config, default to it. The
-			 * 16-bit case will be figured out above, if the chip actually
-			 * supports it, and we're in AUTO or 16BIT mode.
-			 */
-			busw = 0;
-#endif /* !CONFIG_SYS_NAND_BUSWIDTH_8BIT */
 		}
 	} else {
 		/*
