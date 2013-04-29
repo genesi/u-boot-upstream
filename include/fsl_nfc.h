@@ -41,37 +41,10 @@
  *	Reading or writing a 2K or 4K page requires only 1 FDI/FDO cycle.
  *	Also some of registers are moved and/or changed meaning as seen below.
  */
-#if defined(CONFIG_MX27) || defined(CONFIG_MX31)
-#define MXC_NFC_V1
-#define is_mxc_nfc_1()		1
-#define is_mxc_nfc_21()		0
-#define is_mxc_nfc_32()		0
-#elif defined(CONFIG_MX25) || defined(CONFIG_MX35)
-#define MXC_NFC_V2_1
-#define is_mxc_nfc_1()		0
-#define is_mxc_nfc_21()		1
-#define is_mxc_nfc_32()		0
-#elif defined(CONFIG_MX51) || defined(CONFIG_MX53)
-#define MXC_NFC_V3
-#define MXC_NFC_V3_2
-#define is_mxc_nfc_1()		0
-#define is_mxc_nfc_21()		0
-#define is_mxc_nfc_32()		1
-#else
-#error "MXC NFC implementation not supported"
-#endif
-#define is_mxc_nfc_3()		is_mxc_nfc_32()
 
-#if defined(MXC_NFC_V1)
-#define NAND_MXC_NR_BUFS		4
-#define NAND_MXC_SPARE_BUF_SIZE		16
-#define NAND_MXC_REG_OFFSET		0xe00
-#define NAND_MXC_2K_MULTI_CYCLE
-#elif defined(MXC_NFC_V2_1) || defined(MXC_NFC_V3_2)
 #define NAND_MXC_NR_BUFS		8
 #define NAND_MXC_SPARE_BUF_SIZE		64
 #define NAND_MXC_REG_OFFSET		0x1e00
-#endif
 
 struct fsl_nfc_regs {
 	u8 main_area[NAND_MXC_NR_BUFS][0x200];
@@ -82,55 +55,14 @@ struct fsl_nfc_regs {
 	 */
 	u8 reserved1[NAND_MXC_REG_OFFSET
 		- NAND_MXC_NR_BUFS * (512 + NAND_MXC_SPARE_BUF_SIZE)];
-#if defined(MXC_NFC_V1)
-	u16 buf_size;
-	u16 reserved2;
-	u16 buf_addr;
-	u16 flash_addr;
-	u16 flash_cmd;
-	u16 config;
-	u16 ecc_status_result;
-	u16 rsltmain_area;
-	u16 rsltspare_area;
-	u16 wrprot;
-	u16 unlockstart_blkaddr;
-	u16 unlockend_blkaddr;
-	u16 nf_wrprst;
-	u16 config1;
-	u16 config2;
-#elif defined(MXC_NFC_V2_1)
-	u16 reserved2[2];
-	u16 buf_addr;
-	u16 flash_addr;
-	u16 flash_cmd;
-	u16 config;
-	u32 ecc_status_result;
-	u16 spare_area_size;
-	u16 wrprot;
-	u16 reserved3[2];
-	u16 nf_wrprst;
-	u16 config1;
-	u16 config2;
-	u16 reserved4;
-	u16 unlockstart_blkaddr;
-	u16 unlockend_blkaddr;
-	u16 unlockstart_blkaddr1;
-	u16 unlockend_blkaddr1;
-	u16 unlockstart_blkaddr2;
-	u16 unlockend_blkaddr2;
-	u16 unlockstart_blkaddr3;
-	u16 unlockend_blkaddr3;
-#elif defined(MXC_NFC_V3_2)
 	u32 flash_cmd;
 	u32 flash_addr[12];
 	u32 config1;
 	u32 ecc_status_result;
 	u32 status_sum;
 	u32 launch;
-#endif
 };
 
-#ifdef MXC_NFC_V3_2
 struct fsl_nfc_ip_regs {
 	u32 wrprot;
 	u32 wrprot_unlock_blkaddr[8];
@@ -140,7 +72,6 @@ struct fsl_nfc_ip_regs {
 	u32 err_addr;
 	u32 delay_line;
 };
-#endif
 
 /* Set FCMD to 1, rest to 0 for Command operation */
 #define NFC_CMD				0x1
@@ -160,15 +91,10 @@ struct fsl_nfc_ip_regs {
 /* Set FDO to 100, rest to 0 for Read Status operation */
 #define NFC_STATUS			0x20
 
-#if defined(MXC_NFC_V1) || defined(MXC_NFC_V2_1)
-#define NFC_CONFIG1_SP_EN		(1 << 2)
-#define NFC_CONFIG1_RST			(1 << 6)
-#define NFC_CONFIG1_CE			(1 << 7)
-#elif defined(MXC_NFC_V3_2)
 #define NFC_CONFIG1_SP_EN		(1 << 0)
 #define NFC_CONFIG1_CE			(1 << 1)
 #define NFC_CONFIG1_RST			(1 << 2)
-#endif
+
 #define NFC_V1_V2_CONFIG1_ECC_EN	(1 << 3)
 #define NFC_V1_V2_CONFIG1_INT_MSK	(1 << 4)
 #define NFC_V1_V2_CONFIG1_BIG		(1 << 5)
@@ -212,14 +138,7 @@ struct fsl_nfc_ip_regs {
 #define NFC_V3_IPC_CREQ			(1 << 0)
 #define NFC_V3_IPC_INT			(1 << 31)
 
-#if defined(MXC_NFC_V1) || defined(MXC_NFC_V2_1)
-#define operation	config2
-#define readnfc		readw
-#define writenfc	writew
-#elif defined(MXC_NFC_V3_2)
-#define operation	launch
 #define readnfc		readl
 #define writenfc	writel
-#endif
 
 #endif /* __FSL_NFC_H */
