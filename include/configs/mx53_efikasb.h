@@ -147,13 +147,14 @@
 
 #if defined(CONFIG_CMD_USB) || defined(CONFIG_CMD_MMC)
 #	define CONFIG_DOS_PARTITION
-//#	define CONFIG_EFI_PARTITION
-//#	define CONFIG_CMD_FAT
+#	define CONFIG_EFI_PARTITION
+#	define CONFIG_CMD_FAT
 #	define CONFIG_CMD_EXT2
 #	define CONFIG_CMD_EXT4
 #endif /* CONFIG_CMD_USB || CONFIG_CMD_MMC */
 
-#define CONFIG_CMD_UBIFS
+/* NAND is disabled because the driver is broken.. */
+#undef CONFIG_CMD_UBIFS
 #ifdef CONFIG_CMD_UBIFS
 #	define CONFIG_CMD_UBI
 #	undef CONFIG_LZO
@@ -162,25 +163,22 @@
 #	undef CONFIG_GZIP
 
 #	define CONFIG_CMD_NAND
-
 #	define CONFIG_SYS_MAX_NAND_DEVICE	1
-#	define CONFIG_SYS_NAND_LARGEPAGE	/* 4k page */
+#	define CONFIG_SYS_NAND_LARGEPAGE
 #	define CONFIG_SYS_NAND_ONFI_DETECTION
-#	define CONFIG_SYS_NAND_USE_FLASH_BBT
-#	undef  CONFIG_SYS_NAND_BUSWIDTH_16BIT	/* 8bit buswidth */
-#	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR_AXI)
+/*
+ * This seems to be for memory-mapped NAND but the NAND subsystem
+ * doesn't build without it..
+ */
+#	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR)
 
 #	define CONFIG_NAND_MXC
-#	define CONFIG_MXC_NAND_REGS_BASE	(NFC_BASE_ADDR_AXI)
-#	define CONFIG_MXC_NAND_IP_REGS_BASE	(NFC_BASE_ADDR)
-#	define  CONFIG_MXC_NAND_HWECC
+#	define CONFIG_MXC_NAND_REGS_BASE	(NFC_BASE_ADDR)
+#	define CONFIG_MXC_NAND_8BIT
+#	define CONFIG_MXC_NAND_HWECC
 
 #	define CONFIG_CMD_MTDPARTS
 #	define CONFIG_MTD_DEVICE
-#	define CONFIG_MTD_DEBUG
-#	ifdef CONFIG_MTD_DEBUG
-#		define CONFIG_MTD_DEBUG_VERBOSE	7
-#	endif
 #	define CONFIG_MTD_PARTITIONS
 #endif /* CONFIG_CMD_UBIFS */
 
@@ -231,7 +229,7 @@
 
 #define CONFIG_STACKSIZE	(128 * 1024)
 #define CONFIG_ENV_SIZE		(8 * 1024)
-#define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + 6 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 
 /*
  * Ideally we would want the load address define to be different to the kernel
@@ -280,8 +278,6 @@
 	"model=" CONFIG_EFIKAMX_MODEL "\0" \
 	"firmware_version=" U_BOOT_TIMESTAMP "\0" \
 	"bootscript=boot.scr\0" \
-	"mtdids=nand0=mxc-nand\0" \
-	"mtdparts=mtdparts=mxc-nand:1m(bootloader)ro,-(filesystem)\0" \
 	"kerneladdr=" ADDR(CONFIG_KERNEL_ADDR) "\0" \
 	"ramdiskaddr=" ADDR(CONFIG_RD_ADDR) "\0" \
 	"dtbaddr=" ADDR(CONFIG_DT_ADDR) "\0" \
