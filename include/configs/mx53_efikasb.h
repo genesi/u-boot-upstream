@@ -154,26 +154,30 @@
 #endif /* CONFIG_CMD_USB || CONFIG_CMD_MMC */
 
 /* NAND is disabled because the driver is broken.. */
-#undef CONFIG_CMD_UBIFS
+#define CONFIG_CMD_UBIFS
 #ifdef CONFIG_CMD_UBIFS
 #	define CONFIG_CMD_UBI
-#	undef CONFIG_LZO
+#	define CONFIG_LZO
 #	define CONFIG_RBTREE
-#	undef CONFIG_ZLIB
-#	undef CONFIG_GZIP
+#	define CONFIG_ZLIB
+#	define CONFIG_GZIP
 
 #	define CONFIG_CMD_NAND
 #	define CONFIG_SYS_MAX_NAND_DEVICE	1
 #	define CONFIG_SYS_NAND_LARGEPAGE
 #	define CONFIG_SYS_NAND_ONFI_DETECTION
+//#	define CONFIG_SYS_NAND_USE_FLASH_BBT
+//#	define CONFIG_MTD_DEBUG
+//#	define CONFIG_MTD_DEBUG_VERBOSE		3
 /*
  * This seems to be for memory-mapped NAND but the NAND subsystem
  * doesn't build without it..
  */
-#	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR)
+#	define CONFIG_SYS_NAND_BASE		(NFC_BASE_ADDR_AXI)
 
 #	define CONFIG_NAND_MXC
-#	define CONFIG_MXC_NAND_REGS_BASE	(NFC_BASE_ADDR)
+#	define CONFIG_MXC_NAND_REGS_BASE	(NFC_BASE_ADDR_AXI)
+#	define CONFIG_MXC_NAND_IP_REGS_BASE	(NFC_BASE_ADDR)
 #	define CONFIG_MXC_NAND_8BIT
 #	define CONFIG_MXC_NAND_HWECC
 
@@ -229,7 +233,7 @@
 
 #define CONFIG_STACKSIZE	(128 * 1024)
 #define CONFIG_ENV_SIZE		(8 * 1024)
-#define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + 32 * 1024 * 1024)
 
 /*
  * Ideally we would want the load address define to be different to the kernel

@@ -1329,7 +1329,8 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 	if (mtd->ecc_stats.failed - stats.failed)
 		return -EBADMSG;
 
-	return  mtd->ecc_stats.corrected - stats.corrected ? -EUCLEAN : 0;
+	//return  mtd->ecc_stats.corrected - stats.corrected ? -EUCLEAN : 0;
+	return 0;
 }
 
 /**
@@ -2614,29 +2615,6 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 
 	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
 
-/* hack */
-//#if 0
-//	{
-//		int f = le16_to_cpu(p->features);
-//	printk(KERN_INFO "ONFI %d Features: %s%s%s\n",
-//			chip->onfi_version,
-//			f&0x1 ? "16bit " : "",
-//			f&0x2 ? "multi-LUN " : "",
-//			f&0x40 ? "EPP " : "");
-//
-//	printk(KERN_INFO "MFG %s (JEDEC 0x%x) MODEL %s\n",
-//		p->manufacturer, p->jedec_id, p->model);
-//
-//	udelay(1000*100);
-//	printk(KERN_INFO "page %d data %d oob %d pbb %d\n",
-//			p->byte_per_page, p->data_bytes_per_ppage, p->spare_bytes_per_page,
-//			p->pages_per_block);
-//	udelay(1000*100);
-//	printk(KERN_INFO "bpl %d luns %d ggb %d eccbits %d\n",
-//			 p->blocks_per_lun, p->lun_count, p->guaranteed_good_blocks,
-//			p->ecc_bits);
-//	}
-//#endif
 	return 1;
 }
 #else
@@ -2729,10 +2707,6 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 
 	for (i = 0; i < 8; i++)
 		id_data[i] = chip->read_byte(mtd);
-
-//	printk(KERN_INFO "READID returned %02x%02x%02x%02x%02x%02x%02x%02x\n",
-//		id_data[0], id_data[1], id_data[2], id_data[3],
-//		id_data[4], id_data[5], id_data[6], id_data[7]);
 
 	if (!type->name)
 		return ERR_PTR(-ENODEV);

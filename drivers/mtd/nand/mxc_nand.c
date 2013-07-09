@@ -647,6 +647,40 @@ static void mxc_nand_write_page_syndrome(struct mtd_info *mtd,
 		chip->write_buf(mtd, oob, i);
 }
 
+static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
+				 u_char *read_ecc, u_char *calc_ecc)
+{
+	struct nand_chip *nand_chip = mtd->priv;
+	struct mxc_nand_host *host = nand_chip->priv;
+	u32 ecc_stat, err;
+	int no_subpages = 1;
+	int ret = 0;
+	u16 ecc_bit_mask, err_limit;
+
+	ecc_bit_mask = /*(host->eccsize == 4) ? 0x7 :*/ 0x7;
+	err_limit = /*(host->eccsize == 4) ? 0x4 :*/ 0x6;
+
+	no_subpages = mtd->writesize >> 9;
+
+	ecc_stat = readl(&host->regs->ecc_status_result);
+
+	do {
+		err = ecc_stat & ecc_bit_mask;
+		if (err > err_limit) {
+			printk(KERN_WARNING "UnCorrectable RS-ECC Error\n");
+			return -1;
+		} else {
+			ret += err;
+		}
+		ecc_stat >>= 4;
+	} while (--no_subpages);
+
+	//mtd->ecc_stats.corrected += ret;
+	//printk("%d Symbol Correctable RS-ECC Error\n", ret);
+
+	return ret;
+}
+
 static int mxc_nand_correct_data(struct mtd_info *mtd, u_char *dat,
 				 u_char *read_ecc, u_char *calc_ecc)
 {
@@ -1158,7 +1192,7 @@ int board_nand_init(struct nand_chip *this)
 	host->ip_regs =
 		(struct fsl_nfc_ip_regs __iomem *)CONFIG_MXC_NAND_IP_REGS_BASE;
 	host->clk_act = 1;
-
+#if 0
 	this->ecc.calculate = mxc_nand_calculate_ecc;
 	this->ecc.hwctl = mxc_nand_enable_hwecc;
 	this->ecc.correct = mxc_nand_correct_data;
@@ -1172,11 +1206,15 @@ int board_nand_init(struct nand_chip *this)
 	this->ecc.write_oob = mxc_nand_write_oob_syndrome;
 	this->ecc.bytes = 9;
 	this->ecc.prepad = 7;
+#endif
+	this->ecc.mode = NAND_ECC_HW;
+	this->ecc.calculate = mxc_nand_calculate_ecc;
+	this->ecc.hwctl = mxc_nand_enable_hwecc;
+	this->ecc.correct = mxc_nand_correct_data_v2_v3;
 
-	host->pagesize = 512;
+	host->pagesize = 4096;
 
-	this->ecc.size = 512;
-	_mxc_nand_enable_hwecc(mtd, 1);
+	this->ecc.size = 4096;
 
 	/* Reset NAND */
 	this->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
@@ -1226,7 +1264,7 @@ int board_nand_init(struct nand_chip *this)
 		break;
 	case 4096:
 		/* Micron 4k+224 */
-		tmp |= NFC_V3_CONFIG2_SPAS(224/2);
+		tmp |= NFC_V3_CONFIG2_SPAS(218/2);
 		tmp |= NFC_V3_CONFIG2_PS_4096;
 		break;
 	default:
@@ -1235,7 +1273,9 @@ int board_nand_init(struct nand_chip *this)
 		break;
 	}
 
-
+	tmp |= NFC_V3_CONFIG2_ECC_MODE_8;
+	tmp = 0x6da3be; //0x70203e; //no ecc: 0x702036;
+	printk("CONFIG2: %x\n", tmp);
 	writenfc(tmp, &host->ip_regs->config2);
 
 	tmp = NFC_V3_CONFIG3_NUM_OF_DEVS(0) |
